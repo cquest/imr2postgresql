@@ -1,0 +1,76 @@
+_1_:
+  query: INSERT
+  table: imr_pm
+
+_2_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+  query: UPDATE
+  table: imr_pm
+
+_3_:
+  query: INSERT
+  table: imr_pp
+
+_4_:
+  csv2sql:
+    Code Greffe: codegreffe
+    ID_Etablissement: idetablissement
+    Numero_Gestion: numerogestion
+  query: UPDATE
+  table: imr_pp
+
+_5_:
+  query: INSERT
+  table: imr_rep
+
+_6_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Représentant: idrepresentant
+    Qualité: qualite
+  query: UPDATE
+  table: imr_rep
+
+_7_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Représentant: idrepresentant
+    Qualité: qualite
+  query: UPDATE
+  table: imr_rep
+
+_8_:
+  query: INSERT
+  table: imr_ets
+
+_9_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Etablissement: idetablissement
+  query: UPDATE
+  table: imr_ets
+
+_10_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Etablissement: idetablissement
+  query: UPDATE
+  table: imr_ets
+
+_11_:
+  query: INSERT
+  table: imr_obs
+
+_12_:
+  query: INSERT
+  table: imr_actes
+
+_13_:
+  query: INSERT
+  table: imr_annuels
