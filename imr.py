@@ -40,6 +40,8 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                     if row[key] != '':
                         field = re.sub(r'[ \_\-\.]','',unidecode(key)).lower()
                         sql_cols = sql_cols + field + ','
+                        if row[key] in ['supprimé', '(supprimé)']:
+                            row[key] = None
                         sql_vals = sql_vals + db.mogrify("%s, ", (row[key],)).decode()
                 q = q.replace('@COLS@', sql_cols[:-1]).replace('@VALS@', sql_vals[:-2] )
                 if 'csv2sql' in curdef:
