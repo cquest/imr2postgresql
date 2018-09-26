@@ -7,7 +7,7 @@ import yaml
 import psycopg2
 from unidecode import unidecode
 
-pg = psycopg2.connect("dbname='cquest' user='cquest'")
+pg = psycopg2.connect("dbname=imr")
 
 # définition du mapping des flux et des requêtes
 fluxdef = yaml.load(open('imr.yml','r'))
@@ -58,5 +58,5 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                         db.execute(q)
                         rows = db.fetchone()
                     else:
-                        print('%s|%s|%s' % (sys.argv[1], re.sub(r'\n *',' ',q), rows[0]))
+                        print('%s|%s|%s|%s' % (sys.argv[1], sql_where[:-5], re.sub(r'\n *',' ',q), rows[0]))
                 nb = nb + rows[0]
