@@ -1,4 +1,7 @@
 _1_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
   query: INSERT
   table: imr_pm
 
@@ -10,6 +13,10 @@ _2_:
   table: imr_pm
 
 _3_:
+  csv2sql:
+    Code Greffe: codegreffe
+    ID_Etablissement: idetablissement
+    Numero_Gestion: numerogestion
   query: INSERT
   table: imr_pp
 
@@ -22,6 +29,11 @@ _4_:
   table: imr_pp
 
 _5_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Représentant: idrepresentant
+    Qualité: qualite
   query: INSERT
   table: imr_rep
 
@@ -44,6 +56,10 @@ _7_:
   table: imr_rep
 
 _8_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Etablissement: idetablissement
   query: INSERT
   table: imr_ets
 
@@ -64,6 +80,10 @@ _10_:
   table: imr_ets
 
 _11_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    ID_Observation: idobservation
   query: INSERT
   table: imr_obs
 
@@ -72,5 +92,10 @@ _12_:
   table: imr_actes
 
 _13_:
+  csv2sql:
+    Code Greffe: codegreffe
+    Numero_Gestion: numerogestion
+    Numéro_Dépôt: numerodepot
+    Date_Clôture: datecloture
   query: INSERT
   table: imr_annuels
