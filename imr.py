@@ -31,6 +31,7 @@ queries = {'UPDATE': """WITH rows AS (UPDATE @TABLE@ SET (@COLS@) = (@VALS@) WHE
            'DELETE': """WITH rows AS (DELETE FROM @TABLE@ WHERE @WHERE@ RETURNING 1)
                         SELECT count(*) as updated FROM rows"""}
 
+fluxdef,flux = load_fluxdef(sys.argv[1])
 if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
 
     nb = 0
