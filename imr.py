@@ -7,19 +7,30 @@ import yaml
 import psycopg2
 from unidecode import unidecode
 
+
+def make_query(sql_action, sql_table, sql_where, sql_cols, sql_vals):
+    "Complète un template de requête SQL avec les WHERE / COLS / VALS"
+    q = queries[sql_action].replace('@TABLE@', sql_table)
+    q = q.replace('@COLS@', sql_cols[:-1]).replace('@VALS@', sql_vals[:-2] )
+    q = q.replace('@WHERE@', sql_where[:-5])
+    return(q)
+
+
 pg = psycopg2.connect("dbname=imr")
 
 # définition du mapping des flux et des requêtes
 fluxdef = yaml.load(open('imr.yml','r'))
 flux = re.sub('^.*/','',sys.argv[1]).split('_')
+
+# modèles de requêtes INSERT et UPDATE
+queries = {'UPDATE': """WITH rows AS (UPDATE @TABLE@ SET (@COLS@) = (@VALS@) WHERE @WHERE@ RETURNING 1)
+                        SELECT count(*) as updated FROM rows""",
+           'INSERT': """WITH rows AS (INSERT INTO @TABLE@ (@COLS@) VALUES (@VALS@) RETURNING 1)
+                        SELECT count(*) as updated FROM rows""",
+           'DELETE': """WITH rows AS (DELETE FROM @TABLE@ WHERE @WHERE@ RETURNING 1)
+                        SELECT count(*) as updated FROM rows"""}
+
 if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
-    curdef = fluxdef['_'+flux[4]+'_']
-    if curdef['query'] == 'UPDATE':
-        query = """WITH rows AS (UPDATE %s SET (@COLS@) = (@VALS@) WHERE @WHERE@ RETURNING 1)
-                SELECT count(*) as updated FROM rows""" % curdef['table']
-    else:
-        query = """WITH rows AS (INSERT INTO %s (@COLS@) VALUES (@VALS@) RETURNING 1)
-                SELECT count(*) as updated FROM rows""" % curdef['table']
 
     nb = 0
     with open(sys.argv[1],encoding = 'utf-8-sig') as csvfile:
@@ -27,10 +38,12 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
             db = pg.cursor()
             reader = csv.DictReader(csvfile, delimiter=';')
             for row in reader:
-                q = query
+                curdef = fluxdef['_'+flux[4]+'_']
+
+                # préparation des paramètres WHERE/COLS/VALS pour la requête SQL
+                sql_where = ''
                 sql_cols = ''
                 sql_vals = ''
-                sql_where = ''
                 for key in row:
                     if 'csv2sql' in curdef and key in curdef['csv2sql']:
                         sql_where = (sql_where +
@@ -43,20 +56,42 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                         if row[key] in ['supprimé', '(supprimé)']:
                             row[key] = None
                         sql_vals = sql_vals + db.mogrify("%s, ", (row[key],)).decode()
-                q = q.replace('@COLS@', sql_cols[:-1]).replace('@VALS@', sql_vals[:-2] )
-                if 'csv2sql' in curdef:
-                    q = q.replace('@WHERE@', sql_where[:-5] )
-                db.execute(q)
-                rows = db.fetchone()
-                if rows[0] != 1:
-                    if rows[0] == 0 and flux[4] in ['6', '7', '9']:
-                        # cas des nouveaux établissements figurant dans les EVT (voir doc page 25 et 30)
-                        # faire un INSERT au lieu de l'UPDATE
-                        q = re.sub(r'UPDATE (.*) SET ', 'INSERT INTO \g<1> ', q)
-                        q = re.sub(r' = ', ' VALUES ', q)
-                        q = re.sub(r' WHERE .* RETURNING ', ' RETURNING ', q)
-                        db.execute(q)
-                        rows = db.fetchone()
+                
+                # sélection de la requête à exécuter
+                action = curdef['query']
+                # observations = ajout / rectification / suppression
+                if flux[4] == '11':
+                    etat = row['Etat '] if 'Etat ' in row else row['Etat']
+                    if etat == 'Rectification':
+                        action = 'UPDATE'
+                    elif etat == 'Suppression':
+                        action = 'DELETE'
                     else:
-                        print('%s|%s|%s|%s' % (sys.argv[1], sql_where[:-5], re.sub(r'\n *',' ',q), rows[0]))
-                nb = nb + rows[0]
+                        action = 'UPDATE'
+                q = make_query(action, curdef['table'], sql_where, sql_cols, sql_vals)
+                try:
+                    db.execute(q)
+                    rows = db.fetchone()
+                    if rows[0] != 1:
+                        if rows[0] == 0 and flux[4] in ['6', '7', '9']:
+                            # cas des nouveaux établissements figurant dans les EVT (voir doc page 25 et 30)
+                            # faire un INSERT au lieu de l'UPDATE
+                            q = make_query('INSERT', curdef['table'], sql_where, sql_cols, sql_vals)
+                            db.execute(q)
+                            rows = db.fetchone()
+                        elif rows[0] > 1 :
+                            print('DOUBLON: %s|%s|%s|%s' % (sys.argv[1], sql_where[:-5], re.sub(r'\n *',' ',q), rows[0]))
+                    nb = nb + rows[0]
+                except:
+                    # l'INSERT a échoué... on tente un UPDATE
+                    if action == 'INSERT':
+                        pg.commit()
+                        q = make_query('UPDATE', curdef['table'], sql_where, sql_cols, sql_vals)
+                        db.execute(q)
+                        pass
+                    else:
+                        print(curdef)
+                        print(sys.argv[1])
+                        print(sql_where[:-5])
+                        print(re.sub(r'\n *',' ',q))
+                        exit()
