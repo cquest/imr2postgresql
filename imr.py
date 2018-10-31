@@ -33,10 +33,11 @@ queries = {'UPDATE': """WITH rows AS (UPDATE @TABLE@ SET (@COLS@) = (@VALS@) WHE
 
 fluxdef,flux = load_fluxdef(sys.argv[1])
 if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
-
     nb = 0
-    with open(sys.argv[1],encoding = 'utf-8-sig') as csvfile:
-        with pg:
+    
+    csvfile = open(sys.argv[1],encoding = 'utf-8-sig')
+    pg = psycopg2.connect("dbname=imr")
+    with pg:
             db = pg.cursor()
             reader = csv.DictReader(csvfile, delimiter=';')
             for row in reader:
