@@ -8,6 +8,13 @@ import psycopg2
 from unidecode import unidecode
 
 
+def load_fluxdef(filename):
+    "chargement de la définition du mapping des flux et des requêtes"
+    fluxdef = yaml.load(open('imr.yml','r'))
+    flux = re.sub('^.*/','',filename).split('_')
+    return(fluxdef, flux)
+
+
 def make_query(sql_action, sql_table, sql_where, sql_cols, sql_vals):
     "Complète un template de requête SQL avec les WHERE / COLS / VALS"
     q = queries[sql_action].replace('@TABLE@', sql_table)
@@ -15,12 +22,6 @@ def make_query(sql_action, sql_table, sql_where, sql_cols, sql_vals):
     q = q.replace('@WHERE@', sql_where[:-5])
     return(q)
 
-
-pg = psycopg2.connect("dbname=imr")
-
-# définition du mapping des flux et des requêtes
-fluxdef = yaml.load(open('imr.yml','r'))
-flux = re.sub('^.*/','',sys.argv[1]).split('_')
 
 # modèles de requêtes INSERT et UPDATE
 queries = {'UPDATE': """WITH rows AS (UPDATE @TABLE@ SET (@COLS@) = (@VALS@) WHERE @WHERE@ RETURNING 1)
