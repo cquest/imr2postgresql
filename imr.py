@@ -59,7 +59,7 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                     if row[key] in ['supprimé', '(supprimé)']:
                         row[key] = None
                     # forçage des dates en ISO sur les champs dateXXX
-                    elif field[:4] == 'date':
+                    elif field[:4] == 'date' and row[key] is not None:
                         row[key] = re.sub(r'([0-9]{2}).([0-9]{2}).([0-9]{4})',
                                         '\g<3>-\g<2>-\g<1>', row[key])
                     sql_vals = sql_vals + db.mogrify("%s, ", (row[key],)).decode()
