@@ -39,7 +39,7 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
     pg = psycopg2.connect("dbname=imr")
     with pg:
         db = pg.cursor()
-        reader = csv.DictReader(csvfile, delimiter=';')
+        reader = csv.DictReader(csvfile, delimiter=';', quoting=csv.QUOTE_NONE)
         for row in reader:
             curdef = fluxdef['_'+flux[4]+'_']
 
