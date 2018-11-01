@@ -76,6 +76,7 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                 else:
                     action = 'UPDATE'
             q = make_query(action, curdef['table'], sql_where, sql_cols, sql_vals)
+
             try:
                 db.execute(q)
                 rows = db.fetchone()
