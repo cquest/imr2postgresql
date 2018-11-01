@@ -101,4 +101,4 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                     print(sys.argv[1])
                     print(sql_where[:-5])
                     print(re.sub(r'\n *',' ',q))
-                    exit()
+            pg.commit()
