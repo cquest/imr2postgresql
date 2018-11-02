@@ -16,13 +16,10 @@ do
     table=$(echo "$f" | sed 's/^.*_//;s/.csv//')
     psql $DB -c "DROP TABLE IF EXISTS imr_$table"
     psql $DB -c "CREATE TABLE imr_$table ($cols)"
-    psql $DB -c "TRUNCATE imr_$table"
-    psql $DB -c "CREATE INDEX imr_siren_$table on imr_$table (siren)"
-    psql $DB -c "CREATE INDEX imr_greffe_$table on imr_$table (codegreffe, numerogestion)"
 done
 rm $TEMP/0101*.csv
 
-# chargement (parallélisé) des fichiers stock CSV dans postgresql
+# chargement (parallélisé) des fichiers stock CSV initiaux dans postgresql
 rm $TEMP/*.csv
 for z in $DATA/IMR_Donnees_Saisies/tc/stock/2017/05/04/*.zip
 do
@@ -33,3 +30,18 @@ do
     rm $TEMP/*.csv
 done
 
+# index unique pour clés primaires
+psql $DB -c "
+create unique index imr_pp_unique on imr_pp (codegreffe, numerogestion);
+create unique index imr_pm_unique on imr_pm (codegreffe, numerogestion);
+create unique index imr_ets_unique on imr_ets (codegreffe, numerogestion, idetablissement);
+create unique index imr_rep_unique on imr_rep (codegreffe, numerogestion, idrepresentant, qualite);
+create unique index imr_obs_unique on imr_obs (codegreffe, numerogestion, idobservation);
+create unique index imr_annuels_unique on imr_annuels (codegreffe, numerogestion, numerodepot, datecloture);
+"
+
+# import des flux de mise à jour en parallèle...
+for date in $DATA/IMR_Donnees_Saisies/tc/flux/*/*/*
+do
+  ls -1v $date | parallel sh imr_flux_greffe.sh $date/{}
+done
