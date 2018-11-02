@@ -55,19 +55,24 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
         db = pg.cursor()
         for row in reader:
             curdef = fluxdef['_'+flux[4]+'_']
-
             # préparation des paramètres WHERE/COLS/VALS pour la requête SQL
             sql_where = ''
             sql_cols = ''
             sql_vals = ''
             for key in row:
-                if 'csv2sql' in curdef and key in curdef['csv2sql']:
+                key2=key.replace('"','').replace('\ufeff','')
+                if 'csv2sql' in curdef and key2 in curdef['csv2sql']:
                     sql_where = (sql_where +
-                                curdef['csv2sql'][key] +
+                                curdef['csv2sql'][key2] +
                                 db.mogrify(" = %s", (row[key],)).decode() +
                                 " AND " )
                 if row[key] != '':
-                    field = re.sub(r'[ \_\-\.]','',unidecode(key)).lower()
+                    try:
+                        field = re.sub(r'[ \_\-\.]','',unidecode(key2)).lower()
+                    except:
+                        print(sys.argv[1])
+                        print(key, row)
+                        exit()
                     sql_cols = sql_cols + field + ','
                     if row[key] in ['supprimé', '(supprimé)']:
                         row[key] = None
