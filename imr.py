@@ -3,6 +3,7 @@ import csv
 import sys
 import re
 import yaml
+import gzip
 
 import psycopg2
 from unidecode import unidecode
@@ -35,11 +36,23 @@ fluxdef,flux = load_fluxdef(sys.argv[1])
 if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
     nb = 0
     
-    csvfile = open(sys.argv[1],encoding = 'utf-8-sig')
+    if sys.argv[1][-3:] == '.gz':
+        csvfile = gzip.open(sys.argv[1])
+    else:
+        csvfile = open(sys.argv[1])
+
+    # on lit la première ligne pour voire si on a des quotes ou pas...
+    # head = csvfile.readline()
+    # csvfile.seek(0, 0)
+    # if '"' in head:
+    #     reader = csv.DictReader(csvfile, delimiter=';')
+    # else:
+    #     reader = csv.DictReader(csvfile, delimiter=';', quoting=csv.QUOTE_NONE)
+    reader = csv.DictReader(csvfile, delimiter=';')
+
     pg = psycopg2.connect("dbname=imr")
     with pg:
         db = pg.cursor()
-        reader = csv.DictReader(csvfile, delimiter=';', quoting=csv.QUOTE_NONE)
         for row in reader:
             curdef = fluxdef['_'+flux[4]+'_']
 
