@@ -52,7 +52,7 @@ _7_:
     Numero_Gestion: numerogestion
     ID_Représentant: idrepresentant
     Qualité: qualite
-  query: UPDATE
+  query: DELETE
   table: imr_rep
 
 _8_:
@@ -76,7 +76,7 @@ _10_:
     Code Greffe: codegreffe
     Numero_Gestion: numerogestion
     ID_Etablissement: idetablissement
-  query: UPDATE
+  query: DELETE
   table: imr_ets
 
 _11_:
