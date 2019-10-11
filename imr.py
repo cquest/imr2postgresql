@@ -67,37 +67,53 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
     pg = psycopg2.connect("dbname=imr")
     with pg:
         db = pg.cursor()
+        # a-t-on déjà intégré ce fichier ?
+        db.execute('SELECT * FROM imr_csv WHERE greffe = %s AND lot >= %s AND fichier = %s', (flux[0], int(flux[1]), int(flux[4])))
+        if db.rowcount > 0:
+            # déjà intégré, on quitte
+            exit()
+
         for row in reader:
             curdef = fluxdef['_'+flux[4]+'_']
             # préparation des paramètres WHERE/COLS/VALS pour la requête SQL
             sql_where = ''
+            sql_where_json = {}
             sql_cols = ''
             sql_vals = ''
             for key in row:
-                key2=key.replace('"','').replace('\ufeff','')
-                if 'csv2sql' in curdef and key2 in curdef['csv2sql']:
-                    sql_where = (sql_where +
-                                curdef['csv2sql'][key2] +
-                                db.mogrify(" = %s", (row[key],)).decode() +
-                                " AND " )
-                if row[key] != '':
-                    try:
-                        field = re.sub(r'[ \_\-\.]','',unidecode(key2)).lower()
-                    except:
-                        print(sys.argv[1])
-                        print(key, row)
-                        exit()
-                    sql_cols = sql_cols + field + ','
-                    if row[key] in ['supprimé', '(supprimé)']:
-                        row[key] = None
-                    # forçage des dates en ISO sur les champs dateXXX
-                    elif field[:4] == 'date' and row[key] is not None:
-                        row[key] = re.sub(r'([0-9]{2}).([0-9]{2}).([0-9]{4})',
-                                        '\g<3>-\g<2>-\g<1>', row[key])
-                    sql_vals = sql_vals + db.mogrify("%s, ", (row[key],)).decode()
-            
-            # sélection de la requête à exécuter
+                if row[key] is not None:
+                    key2=key.replace('"','').replace('\ufeff','')
+                    if 'csv2sql' in curdef and key2 in curdef['csv2sql']:
+                        sql_where = (sql_where +
+                                    curdef['csv2sql'][key2] +
+                                    db.mogrify(" = %s", (row[key],)).decode() +
+                                    " AND " )
+                        sql_where_json[curdef['csv2sql'][key2]] = row[key]
+                    if row[key] != '':
+                        try:
+                            field = re.sub(r'[ \_\-\.]','',unidecode(key2)).lower()
+                        except:
+                            print(sys.argv[1])
+                            print(key, row)
+                            exit()
+                        sql_cols = sql_cols + field + ','
+                        if row[key] in ['supprimé', '(supprimé)']:
+                            row[key] = None
+                        # forçage des dates en ISO sur les champs dateXXX
+                        elif field[:4] == 'date' and row[key] is not None:
+                            row[key] = re.sub(r'([0-9]{2}).([0-9]{2}).([0-9]{4})',
+                                            '\g<3>-\g<2>-\g<1>', row[key])
+                        sql_vals = sql_vals + db.mogrify("%s, ", (row[key],)).decode()
+
+            # sélection de la requête à exécuter en fonction du libélle_evt ou état
             action = curdef['query']
+            # rep = Nouveau / Modification
+            if flux[4] == '6':
+                etat = row['Libelle_Evt']
+                if etat == 'Nouveau Dirigeant':
+                    action = 'INSERT'
+                else:
+                    action = 'UPDATE'
             # observations = ajout / rectification / suppression
             if flux[4] == '11':
                 etat = row['Etat '] if 'Etat ' in row else row['Etat']
@@ -113,14 +129,15 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                 db.execute(q)
                 rows = db.fetchone()
                 if rows[0] != 1:
-                    if rows[0] == 0 and flux[4] in ['6', '7', '9']:
+                    if rows[0] == 0 and action == 'UPDATE':
                         # cas des nouveaux établissements figurant dans les EVT (voir doc page 25 et 30)
                         # faire un INSERT au lieu de l'UPDATE
                         q = make_query('INSERT', curdef['table'], sql_where, sql_cols, sql_vals)
                         db.execute(q)
                         rows = db.fetchone()
+                        imr_log(infile, flux[4], 'UPDATE>INSERT', curdef['table'], sql_where_json)
                     elif rows[0] > 1 :
-                        print('DOUBLON: %s|%s|%s|%s' % (sys.argv[1], sql_where[:-5], re.sub(r'\n *',' ',q), rows[0]))
+                        print('DOUBLON|%s|%s|%s|%s' % (infile, json.dumps(sql_where_json), re.sub(r'\n *',' ',q), rows[0]))
                 nb = nb + rows[0]
             except:
                 # l'INSERT a échoué... on tente un UPDATE
@@ -128,6 +145,7 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                     pg.commit()
                     q = make_query('UPDATE', curdef['table'], sql_where, sql_cols, sql_vals)
                     db.execute(q)
+                    imr_log(infile, flux[4], 'INSERT>UPDATE', curdef['table'], sql_where_json)
                     pass
                 else:
                     print(curdef)
@@ -135,3 +153,5 @@ if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
                     print(sql_where[:-5])
                     print(re.sub(r'\n *',' ',q))
             pg.commit()
+        db.execute('INSERT INTO imr_csv (greffe, lot, fichier, quand) VALUES (%s, %s, %s, now())', (flux[0], int(flux[1]), int(flux[4])))
+        pg.commit()
