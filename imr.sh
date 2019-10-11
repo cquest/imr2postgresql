@@ -1,3 +1,5 @@
+#! /bin/bash
+
 TEMP=/dev/shm/imr
 DATA=..
 DB=imr
@@ -41,7 +43,7 @@ create unique index imr_annuels_unique on imr_annuels (codegreffe, numerogestion
 "
 
 # import des flux de mise à jour en parallèle...
-for date in $DATA/IMR_Donnees_Saisies/tc/flux/*/*/*
+for date in ../IMR_Donnees_Saisies/tc/flux/*/*/*
 do
   ls -1v $date | parallel sh imr_flux_greffe.sh $date/{}
 done
