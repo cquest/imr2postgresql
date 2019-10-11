@@ -1,9 +1,11 @@
+#! /bin/bash
+
 echo $1
 rm -f $1/*/*.temp $1/*/*_out.csv $1/*/*_err.csv
-find $1 -name *.gz -exec gunzip {} \;
+#find $1 -name *.gz -exec gunzip {} \;
 for f in $(ls -1v $1/*/*.csv)
 do
-  # est-ce-que le quoting du CSV est incorrect (nombre impair de ")?
+  # est-ce-que le quoting du CSV est incorrect (nombre cohérent de ")?
   badquot=$(sed 's/""//g;s/"[^"]*"//g' "$f" | grep -c '"')
   if [ $badquot -gt 0 ]
   then
@@ -14,9 +16,9 @@ do
       sed 's/Dénomination;Siren/Dénomination;Siren2/;s/Dénomination";"Siren/Dénomination";"Siren2/' \
       > "$f.temp"
   else
-    sed 's/Dénomination;Siren/Dénomination;Siren2/' $f > "$f.temp"
+    sed 's/Dénomination;Siren/Dénomination;Siren2/;s/Dénomination";"Siren/Dénomination";"Siren2/' $f > "$f.temp"
   fi
-  # gzip -9 "$f" &
+  #gzip -9 "$f" &
   python imr.py "$f.temp"
   # compression des fichiers traités pour archivage
 done
