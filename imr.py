@@ -4,6 +4,7 @@ import sys
 import re
 import yaml
 import gzip
+import json
 
 import psycopg2
 from unidecode import unidecode
@@ -24,6 +25,16 @@ def make_query(sql_action, sql_table, sql_where, sql_cols, sql_vals):
     return(q)
 
 
+def imr_log(infile, flux, action, table, sql_where_json=None, sql_cols=None, sql_vals=None):
+    "Stockage des logs d'anomalies dans postgresql pour analyse"
+    log = sql_where_json
+    log["infile"] = infile
+    log["flux"] = flux
+    log["action"] = action
+    log["table"] = table
+    logfile.write(json.dumps(log)+'\n')
+
+
 # modèles de requêtes INSERT et UPDATE
 queries = {'UPDATE': """WITH rows AS (UPDATE @TABLE@ SET (@COLS@) = (@VALS@) WHERE @WHERE@ RETURNING 1)
                         SELECT count(*) as updated FROM rows""",
@@ -33,6 +44,9 @@ queries = {'UPDATE': """WITH rows AS (UPDATE @TABLE@ SET (@COLS@) = (@VALS@) WHE
                         SELECT count(*) as updated FROM rows"""}
 
 fluxdef,flux = load_fluxdef(sys.argv[1])
+infile = re.sub('^.*/','',sys.argv[1])
+logfile = open('logs/'+flux[0]+'.json', 'a')
+
 if len(flux)>3 and '_'+flux[4]+'_' in fluxdef:
     nb = 0
     
